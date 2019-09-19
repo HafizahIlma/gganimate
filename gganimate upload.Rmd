@@ -1,0 +1,203 @@
+---
+title: "gganimate"
+author: "Hafizah Ilma"
+date: "9/4/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(gganimate)
+options(scipen=9)
+```
+
+```{r}
+data <- read.csv("Data_Kecelakaan2017.csv")
+data
+```
+```{r}
+max(data$Jumlah.Kecelakaan2)
+data <- data %>% 
+  mutate("Jumlah.Kecelakaan2"=cumsum(Jumlah.Kecelakaan))
+```
+
+Data 1
+data gather bukan komulatif jenis korban
+
+```{r}
+library(tidyr)
+library(png)
+library(magick)
+data1<- data %>% 
+  dplyr::select(-Jumlah.Kecelakaan, -Jumlah.Kecelakaan2, -Kerugian.Materi..Juta.Rupiah. ) %>% 
+  gather(Jenis.Korban, Total, Korban.Meninggal.Dunia:Korban.Luka.Ringan) %>% 
+  mutate(Tahun2=as.factor(Tahun))
+
+data1 <- data1 %>% 
+  mutate(tahunn=Tahun)
+
+```
+
+```{r}
+data5 <- data %>% 
+  select(Tahun, Jumlah.Kecelakaan2) %>% 
+  mutate("Thn"=as.factor(Tahun), "Tahunn"=Tahun)
+
+data5$Jumlah.Kecelakaan111 <- format(as.numeric(data5$Jumlah.Kecelakaan2), big.mark=",")
+```
+
+area
+```{r}
+fix2 <-  ggplot(data5, aes(x=Tahun, y=Jumlah.Kecelakaan2, fill="pink")) +
+   geom_area(colour="blue", size=.5, alpha=.5) +
+  geom_point()+theme_classic()+
+  geom_text(aes(x = max(Tahun)+.1, label = sprintf("%5.0f", Jumlah.Kecelakaan2)), hjust=1)+
+  scale_y_continuous(breaks = seq(19920 ,1348292, 90000))+
+  scale_x_continuous(breaks = seq(1992,2017,3))+
+  labs(y = 'Jumlah Komulatif Kecelakaan Terjadi', title = 'Jumlah Komulatif Total Kecelakaan Terjadi' ) +
+  theme(legend.position = "none", 
+        plot.title=element_text(size=20, hjust=0.5, face="bold", colour="white"),
+        plot.background = element_rect(fill="#000080"),
+        axis.text.y = element_text(color = "white",size = 9),
+        axis.text.x = element_text(color = "white",size = 9),
+         axis.title.x = element_text(color="white", size=11, face="bold"),
+         axis.title.y = element_text(color="white", size=11, face="bold"))+
+  
+  
+  
+    transition_reveal(Tahun) + 
+  view_follow(fixed_y = TRUE)+
+  
+  enter_drift(x_mod = -1) + exit_drift(x_mod = 1) 
+  
+
+
+
+   animate(fix2, fps=5)
+    
+    anim_save("totalkeccol", animation = last_animation(), path = "C:/Users/teama/Desktop/HAFIZAHILMA/gganimate/plot_kecelakaan")
+
+```
+
+data3 data komulatif setiap jenis korban
+```{r}
+data33 <- read.csv("data33.csv")
+tail(data33)
+data33$Total <- format(as.numeric(data33$Total), big.mark=",")
+```
+
+
+
+PLOT BAR
+```{r}
+staticplot = ggplot(data33, aes(rank, group = Jenis.Korban,
+                                       fill = as.factor(Jenis.Korban), color = as.factor(Jenis.Korban))) + 
+  geom_tile(aes(y = Value_lbl/2,
+                height = Value_lbl,
+                width = 0.9), alpha = 0.8, colour = "black") +
+  geom_text(aes(y = Value_lbl, label = paste(Jenis.Korban, " ")), size=6, vjust = 0.2, hjust = 1, colour = "white") +
+  geom_text(aes(y = Value_lbl, label =  paste(Total, "  "), hjust=0), size=6,  colour = "white") +
+  coord_flip(clip = "off", expand = FALSE) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma)+
+  scale_fill_brewer(palette="Dark2")+
+  guides(color = FALSE, fill = FALSE) +
+  theme(axis.line=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="none",
+        panel.background = element_rect(fill="#3D3333"),
+        plot.background = element_rect(fill="black"),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.grid.major.x = element_line( size=.1, color="white" ),
+        panel.grid.minor.x = element_line( size=.1, color="white" ),
+        plot.title=element_text(size=20, hjust=0.5, face="bold", colour="white"),
+        plot.subtitle=element_text(size=16, hjust=0.5, face="italic", color="white"),
+        plot.caption =element_text(size=14, hjust=0.5, face="italic", color="white"),
+        plot.margin = margin(2,4,2,4, "cm"),
+        axis.text.x = element_text(color = "white",size = 10)) #trbl
+
+ 
+anim= staticplot + transition_states(Tahun, transition_length = 4, state_length = 1) +labs(title = 'Jumlah Komulatif \n Korban Kecelakaan : {closest_state} \n \n' )
+
+
+ # anim_save("back", animation = last_animation(), path = "C:/Users/teama/Desktop/HAFIZAHILMA/gganimate/plot_kecelakaan")
+
+ #scales comma
+```
+
+
+MAteri
+```{r}
+library(tidyr)
+library(png)
+library(magick)
+datamateri<- data %>% 
+  dplyr::select(Kerugian.Materi..Juta.Rupiah., Tahun) %>% 
+  mutate("materi"=cumsum(Kerugian.Materi..Juta.Rupiah.))
+range(datamateri$materi)
+
+```
+
+
+
+```{r}
+materi <-  ggplot(datamateri, aes(x=Tahun, y=materi)) +
+  geom_line(size=1, col="red") +geom_point(size=3, col="blue")+
+  geom_segment(aes(xend=max(Tahun), yend = materi), linetype=2, colour='blue') +
+  geom_text(aes(x = max(Tahun)+.1, label = sprintf("%5.0f", materi)), hjust=1) +
+  scale_y_continuous(breaks = seq(15077,3578077, 200000), labels = scales::comma)+
+  scale_x_continuous(breaks = seq(1992,2017,2))+
+  theme_test()+
+  labs(y = "Total Kerugian Materi (Jutaan Rupiah)\n", title = "Total Kerugian Materi")+
+  theme(legend.position = "bottom",
+        plot.title=element_text(size=16, hjust=0.5, face="bold", colour="black"))+
+  coord_cartesian(clip = 'off') +
+    theme(panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        plot.margin = margin(5.5, 40, 5.5, 5.5))+
+  transition_reveal(Tahun) + 
+  view_follow(fixed_y = TRUE)+
+  enter_drift(x_mod = -1) + exit_drift(x_mod = 1)
+
+
+ # anim_save("materi-dinamis2", animation = last_animation(), path = "C:/Users/teama/Desktop/HAFIZAHILMA/gganimate")
+
+
+```
+
+Materi statis
+```{r}
+datamateri$materi2 <- format(as.numeric(datamateri$materi), big.mark=",")
+```
+
+
+```{r}
+mat <- ggplot(datamateri, aes(x=Tahun, y=materi)) +
+  geom_bar(stat="identity", fill="pink")+
+  geom_text(aes(label=materi2),hjust=0, vjust=0.25, size=3.5, angle=90, text=element_text(size=11))+
+  theme_classic() +
+  scale_y_continuous(breaks = seq(15077,5078077, 300000), labels = scales::comma)+
+  scale_x_continuous(breaks = seq(1992,2017,2))+
+   labs(y = "Total Kerugian Materi (Jutaan Rupiah)", title = "Total Kerugian Materi dalam Jutaan Rupiah")+ expand_limits(y=c(15077,3408077))+
+  theme(legend.position = "bottom",
+        plot.title=element_text(size=16, hjust=0.4, face="bold", colour="black"),
+        plot.margin = margin(5.5, 40, 5.5, 5.5))#trbl
+mat
+
+#save to directory
+# ggsave(filename = "C:/Users/teama/Desktop/HAFIZAHILMA/gganimate/mat.png", plot = mat)
+# png(mat,filename = "C:/Users/teama/Desktop/HAFIZAHILMA/gganimate/materiplot.png")
+```
+
